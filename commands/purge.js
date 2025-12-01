@@ -1,117 +1,105 @@
-export default {
-  name: "purge",
-  description: "Expulse tous les non-admins du groupe sauf owner, sudo et bot",
+// 🩸 PURGE — JAMISON MD
 
-  async execute(sock, msg, args) {
-    const from = msg?.key?.remoteJid;
+export const name = "purge";
+export const description = "Expulse tous les non-admins sauf owner, sudo et bot";
 
-    // Réaction
-    try {
-      await sock.sendMessage(from, { react: { text: "🩸", key: msg.key } });
-    } catch {}
+export async function execute(sock, msg, args) {
+  const from = msg?.key?.remoteJid;
 
-    const ownerNumber =
-      (process.env.OWNER_NUMBER || "").replace(/[^0-9]/g, "") +
-      "@s.whatsapp.net";
+  // Réaction
+  try {
+    await sock.sendMessage(from, { react: { text: "🩸", key: msg.key } });
+  } catch {}
 
-    // Vérification groupe
-    if (!from || !from.endsWith("@g.us")) {
-      await sock.sendMessage(
-        from || msg.key.remoteJid,
-        {
-          text: "『 🩸 JAMISON 𝐌𝐃 🩸 』\n🚫 Cette commande est réservée aux *groupes*."
-        },
+  // Vérification groupe
+  if (!from || !from.endsWith("@g.us")) {
+    return await sock.sendMessage(
+      from,
+      { text: "『 🩸 JAMISON 𝐌𝐃 🩸 』\n🚫 Cette commande est réservée aux *groupes*." },
+      { quoted: msg }
+    );
+  }
+
+  // Charger SUDO depuis ton index
+  const sudoList = (global.owners || [])
+    .concat((global.sudo || []))
+    .map((n) => n.replace(/[^0-9]/g, "") + "@s.whatsapp.net");
+
+  try {
+    // Metadata
+    const group = await sock.groupMetadata(from);
+    const participants = group.participants || [];
+
+    // Bot JID
+    const botJid = (sock.user.id || "")
+      .split(":")[0]
+      .replace("@lid", "@s.whatsapp.net");
+
+    // Admins
+    const admins = participants
+      .filter((p) => p.admin)
+      .map((p) => p.id);
+
+    // Membres à kick
+    const toKick = participants
+      .filter(
+        (p) =>
+          !p.admin &&               // pas admin
+          p.id !== botJid &&        // pas le bot
+          !sudoList.includes(p.id)  // pas sudo ni owner
+      )
+      .map((p) => p.id);
+
+    if (toKick.length === 0) {
+      return await sock.sendMessage(
+        from,
+        { text: "『 🩸 JAMISON 𝐌𝐃 🩸 』\n😼 Tous les membres sont protégés. Rien à purifier." },
         { quoted: msg }
       );
-      return;
     }
 
-    try {
-      // Métadonnées
-      const groupData = await sock.groupMetadata(from);
-      const participants = groupData.participants || [];
+    const announce = `╔═══『 🩸 𝐏𝐔𝐑𝐆𝐄 𝐉𝐀𝐌𝐈𝐒𝐎𝐍 🩸 』═══╗
 
-      // JID bot
-      const botJid = (sock?.user?.id || "")
-        .split(":")[0]
-        .replace("@lid", "@s.whatsapp.net");
+🔥 *Le jugement tombe sur les indignes...*
+⚡ *JAMISON MD exécute la purge totale.*
+💀 *Aucun pardon. Aucune évasion.*
 
-      // Liste SUDO globale
-      const sudoList = (global.sudo || []).map((n) => n + "@s.whatsapp.net");
-
-      // Admins
-      const admins = participants
-        .filter((p) => p.admin)
-        .map((p) => p.id);
-
-      // Qui doit être expulsé ?
-      const toKick = participants
-        .filter(
-          (p) =>
-            !p.admin &&
-            p.id !== botJid &&
-            p.id !== ownerNumber &&
-            !sudoList.includes(p.id)
-        )
-        .map((p) => p.id);
-
-      if (toKick.length === 0) {
-        await sock.sendMessage(
-          from,
-          {
-            text: "『 🩸 JAMISON 𝐌𝐃 🩸 』\n😼 Aucun membre à purifier."
-          },
-          { quoted: msg }
-        );
-        return;
-      }
-
-      const allMembers = participants.map((p) => p.id);
-
-      // Texte purge
-      const purgeText = `╔═══『 🩸 𝐏𝐔𝐑𝐆𝐄 JAMISON 🩸 』═══╗
-
-🔥 Le voile sanglant s’abat sur le groupe…
-💀 Les indignes sont arrachés des ombres.
-⚔️ Aucun pardon. Aucun refuge.
-🌑 Le jugement est déjà scellé.
-
-> Exécuté par JAMISON MD 🩸
+📡 *Chaîne Officielle* :
+${global.channel}
 
 ╚══════════════════════════╝`;
 
-      // Envoi image + texte
-      await sock.sendMessage(from, {
-        image: { url: "https://files.catbox.moe/um1spx.jpg" },
-        caption: purgeText,
-        mentions: allMembers
-      });
+    // Envoi image + message
+    await sock.sendMessage(from, {
+      image: { url: "https://files.catbox.moe/um1spx.jpg" },
+      caption: announce,
+      mentions: participants.map((p) => p.id)
+    });
 
-      // Kick
-      await sock.groupParticipantsUpdate(from, toKick, "remove");
+    // Kick
+    await sock.groupParticipantsUpdate(from, toKick, "remove");
 
-      // Confirmation
-      await sock.sendMessage(
-        from,
-        {
-          text: `『 🩸 JAMISON 𝐌𝐃 🩸 』
+    // Résultat final
+    await sock.sendMessage(
+      from,
+      {
+        text: `『 🩸 JAMISON 𝐌𝐃 🩸 』
 
-⚔️ Purge exécutée :
-➡️ *${toKick.length}* membres éliminés.
+⚔️ *Purge accomplie avec succès !*
+➡️ *${toKick.length} membres éliminés.*
 
-🔮 Admins, owner, sudo et bot automatiquement protégés.`
-        },
-        { quoted: msg }
-      );
-    } catch (err) {
-      console.error("❌ Erreur purge :", err);
-      await sock.sendMessage(
-        from,
-        {
-          text: "『 JAMISON 𝐌𝐃 』\n❌ Erreur lors de la purge.\n⚠️ Vérifie que je suis admin."
-        },
-        { quoted: msg }
-      );
-    }
+🛡️ Admins, owners, sudo & bot protégés automatiquement.`
+      },
+      { quoted: msg }
+    );
+  } catch (err) {
+    console.error("❌ Erreur purge :", err);
+    await sock.sendMessage(
+      from,
+      {
+        text: "『 🩸 JAMISON 𝐌𝐃 』\n❌ Une erreur est survenue.\n⚠️ Vérifie que je suis admin."
+      },
+      { quoted: msg }
+    );
   }
-};
+}
