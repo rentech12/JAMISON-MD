@@ -1,8 +1,9 @@
-// 🩸 MENU JAMISON MD Version 2.0 + AUDIO (Fancy)
+// 🩸 MENU JAMISON MD v2 — FANCY
 
 import fs from "fs";
 
-export const name = "menu";  // Obligatoire pour ton index.js
+export const name = "menu";
+export const description = "Affiche le menu principal du bot avec audio";
 
 function formatUptime(seconds) {
   const h = Math.floor(seconds / 3600);
@@ -16,13 +17,15 @@ export async function execute(sock, msg, args) {
     const from = msg.key.remoteJid;
     const uptime = formatUptime(process.uptime());
 
-    // Réaction
+    // Réaction emoji
     await sock.sendMessage(from, { react: { text: "🩸", key: msg.key } });
 
-    // Audio
-    const audio = fs.readFileSync("./media/menu.mp3");
+    // Audio menu
+    const audioPath = "./media/menu.mp3";
+    if (!fs.existsSync(audioPath)) throw new Error("Audio menu.mp3 introuvable !");
+    const audio = fs.readFileSync(audioPath);
 
-    // Texte menu fancy + emoji
+    // Texte du menu
     const menuText = `
 ╔══════════════════════╗
          🩸✨ JAMISON MD ✨🩸
@@ -40,53 +43,11 @@ export async function execute(sock, msg, args) {
 🏓 PING
 ╚════════════════════╝
 
-╔═══ 🏘️ GROUPS 🏘️ ═══╗
-➕ ADD @
-⬇️ DEMOTE @
-⬇️ DEMOTEALL
-📨 INVITE
-👢 KICK @
-👢 KICKALL
-🚪 LEAVE
-🔇 MUTE
-⬆️ PROMOTE @
-⬆️ PROMOTEALL
-🧹 PURGE
-🖼️ SETPPG
-🏷️ TAG
-🏷️ TAGALL
-🔈 UNMUTE
-📢 GPP
-╚════════════════════╝
-
-╔═══ 🎵 DOWNLOAD 🎵 ═══╗
-🖼️ IMAGE
-🎶 PLAY
-╚════════════════════╝
-
-╔═══ 🔒 SECURITY 🔒 ═══╗
-🚫 ANTILINK
-╚════════════════════╝
-
-╔═══ 👑 OWNER 👑 ═══╗
-🛡️ OWNER
-╚════════════════════╝
-
-╔═══ 🖼️ MEDIAS 🖼️ ═══╗
-📷 PHOTO
-📹 VV
-🎨 STICKER
-🖼️ PP
-💾 SAVE
-╚════════════════════╝
-
 🔗 *Chaîne officielle WhatsApp* :
 ${global.channel}
-
-> 𝙳𝙴𝚅 𝙱𝚈 REN TECH
 `;
 
-    // Envoi image + caption
+    // Envoi image + texte
     await sock.sendMessage(from, {
       image: { url: "https://files.catbox.moe/s3d33z.jpg" },
       caption: menuText
@@ -100,6 +61,7 @@ ${global.channel}
     });
 
   } catch (e) {
-    console.error("Erreur dans le menu :", e);
+    console.error("Erreur menu :", e);
+    await sock.sendMessage(msg.key.remoteJid, { text: `❌ Erreur menu : ${e.message}` }, { quoted: msg });
   }
 }
