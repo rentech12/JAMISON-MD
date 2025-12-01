@@ -1,5 +1,9 @@
-// 🩸 Criminal MD BOT — INDEX PRINCIPAL
-// Version : v2.0.1 (Build Clean Handler ESModule)
+//==============================================================//
+//                        JAMISON XMD                           //
+//        WhatsApp Multi-Device Bot — Build Ren Tech            //
+//==============================================================//
+//   Index Principal — Version v3.0 (Handler ES Module Clean)   //
+//==============================================================//
 
 import makeWASocket, {
   useMultiFileAuthState,
@@ -9,47 +13,33 @@ import makeWASocket, {
 
 import pino from "pino";
 import fs from "fs";
-import path from "path";
-import dotenv from "dotenv";
 import chalk from "chalk";
-import { Boom } from "@hapi/boom";
+import dotenv from "dotenv";
 import readline from "readline";
+import { Boom } from "@hapi/boom";
 import { handler } from "./handler.js";
 
 dotenv.config();
 
-// === Console Input ===
+//==============================================================//
+//                      Console Input
+//==============================================================//
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const ask = (q) => new Promise((resolve) => rl.question(q, resolve));
 
-// === Helpers ===
+//==============================================================//
+//                      Helper Functions
+//==============================================================//
 function normalizeJid(jid) {
   if (!jid) return null;
   return jid.split(":")[0].replace("@lid", "@s.whatsapp.net");
 }
+
 function getBareNumber(jid) {
   if (!jid) return "";
   return String(jid).split("@")[0].replace(/[^0-9]/g, "");
 }
-function unwrapMessage(m) {
-  return (
-    m?.ephemeralMessage?.message ||
-    m?.viewOnceMessageV2?.message ||
-    m?.documentWithCaptionMessage?.message ||
-    m
-  );
-}
-function pickText(m) {
-  return (
-    m?.conversation ||
-    m?.extendedTextMessage?.text ||
-    m?.imageMessage?.caption ||
-    m?.videoMessage?.caption ||
-    null
-  );
-}
 
-// === Mode (public/private) ===
 const MODE_FILE = "./mode.json";
 function getMode() {
   if (!fs.existsSync(MODE_FILE)) {
@@ -57,26 +47,33 @@ function getMode() {
   }
   return JSON.parse(fs.readFileSync(MODE_FILE)).mode || "private";
 }
+
 function loadSudo() {
   const file = "./sudo.json";
-  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify({ sudo: [] }, null, 2));
+  if (!fs.existsSync(file)) {
+    fs.writeFileSync(file, JSON.stringify({ sudo: [] }, null, 2));
+  }
   return JSON.parse(fs.readFileSync(file)).sudo;
 }
 
-// === MAIN FUNCTION ===
-async function startCriminal() {
+//==============================================================//
+//                    MAIN BOT FUNCTION
+//==============================================================//
+async function startJamison() {
   const { state, saveCreds } = await useMultiFileAuthState("./session");
-
   const { version } = await fetchLatestBaileysVersion();
+
   const sock = makeWASocket({
     auth: state,
     version,
     printQRInTerminal: false,
     logger: pino({ level: "silent" }),
-    browser: ["Ubuntu", "Chrome", "Criminal-MD"],
+    browser: ["Ubuntu", "Chrome", "Jamison-XMD"],
   });
 
-  // === Pairing ===
+  //--------------------------------------------------------------//
+  //                           Pairing
+  //--------------------------------------------------------------//
   try {
     if (!state?.creds?.registered) {
       let number = (process.env.OWNER_NUMBER || "").trim();
@@ -88,34 +85,36 @@ async function startCriminal() {
       if (number) {
         const resp = await sock.requestPairingCode(number);
         const code = typeof resp === "string" ? resp : resp?.code || null;
-        if (code) console.log(chalk.green("\n🔑 Code d’appairage : ") + code.split("").join(" "));
+
+        if (code) {
+          console.log(chalk.green("\n🔑 Code d'appairage : ") + code.split("").join(" "));
+        }
       } else {
-        console.log(chalk.red("❌ Aucun numéro saisi."));
+        console.log(chalk.red("❌ Aucun numéro fourni."));
       }
     }
   } catch (e) {
-    console.log(chalk.red("❌ Pairing Error:"), e);
+    console.log(chalk.red("❌ Erreur pairing:"), e);
   }
 
-  // === Connexion WhatsApp ===
+  //--------------------------------------------------------------//
+  //                    Connection Updates
+  //--------------------------------------------------------------//
   sock.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
-    if (qr) console.log(chalk.yellow("📸 Scanne vite le QR !"));
+    if (qr) console.log(chalk.yellow("📸 Scanne vite ce QR !"));
 
     if (connection === "open") {
-      console.log(chalk.green("🩸 Criminal MD Connecté"));
+      console.log(chalk.green("🩸 JAMISON XMD Connecté"));
       console.log(chalk.cyan("➡️ Handler ESModule activé"));
 
-      // Owner global
       const ownerJid = normalizeJid(sock.user.id);
-      const ownerNum = getBareNumber(ownerJid);
-      global.owners = [ownerNum];
+      global.owners = [getBareNumber(ownerJid)];
 
-      // Marque premier démarrage
       if (!fs.existsSync("./.firstboot")) {
         fs.writeFileSync("./.firstboot", "ok");
-        console.log(chalk.magenta("↻ Premier lancement → restart dans 3s"));
+        console.log(chalk.magenta("↻ Premier lancement — redémarrage dans 3s..."));
         setTimeout(() => process.exit(1), 3000);
       }
     }
@@ -126,21 +125,22 @@ async function startCriminal() {
 
       if (reason !== DisconnectReason.loggedOut) {
         console.log(chalk.yellow("🔄 Reconnexion dans 3s..."));
-        setTimeout(startCriminal, 3000);
+        setTimeout(startJamison, 3000);
       } else {
-        console.log(chalk.red("🚫 Session expirée — Supprime /session"));
+        console.log(chalk.red("🚫 Session expirée — supprime /session"));
       }
     }
   });
 
   sock.ev.on("creds.update", saveCreds);
 
-  // === Réception des messages ===
+  //--------------------------------------------------------------//
+  //                    Reception Messages
+  //--------------------------------------------------------------//
   sock.ev.on("messages.upsert", async ({ messages }) => {
     for (const msg of messages) {
       if (!msg.message) continue;
 
-      // Mode privé
       const sender = getBareNumber(msg.key.participant || msg.key.remoteJid);
       const mode = getMode();
       const sudo = loadSudo().map((x) => String(x).replace(/[^0-9]/g, ""));
@@ -148,18 +148,19 @@ async function startCriminal() {
 
       if (mode === "private" && !allowed.includes(sender)) continue;
 
-      // Passer au handler.js
       try {
         await handler(sock, msg);
       } catch (err) {
-        console.log("Erreur Handler :", err);
+        console.log("❌ Erreur Handler :", err);
       }
     }
   });
 }
 
-// === START ===
-startCriminal().catch((err) => {
+//==============================================================//
+//                           START BOT
+//==============================================================//
+startJamison().catch((err) => {
   console.log(chalk.red("❌ Fatal Error:"), err);
   try { rl.close(); } catch {}
   process.exit(1);
