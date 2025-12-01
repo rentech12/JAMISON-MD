@@ -1,51 +1,35 @@
-// 🩸 Criminal MD BOT
-// === INDEX PRINCIPAL DU BOT ===
-// Version : v2.0.0 (𝐂𝐫𝐢𝐦𝐢𝐧𝐚𝐥-𝐌𝐃 Build Private Lock)
+// 🩸 Criminal MD BOT — INDEX PRINCIPAL
+// Version : v2.0.1 (Build Clean Handler ESModule)
 
 import makeWASocket, {
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
   DisconnectReason,
 } from "@whiskeysockets/baileys";
+
 import pino from "pino";
 import fs from "fs";
 import path from "path";
-import chalk from "chalk";
-import readline from "readline";
 import dotenv from "dotenv";
+import chalk from "chalk";
 import { Boom } from "@hapi/boom";
+import readline from "readline";
+import { handler } from "./handler.js";
 
 dotenv.config();
 
-// === Interface console ===
+// === Console Input ===
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const ask = (q) => new Promise((resolve) => rl.question(q, resolve));
 
-// === Config globale ===
-const PREFIX = process.env.PREFIX || ".";
-const MODE_FILE = "./mode.json";
-
-// === Gestion du mode (public / private) ===
-function getMode() {
-  if (!fs.existsSync(MODE_FILE)) {
-    fs.writeFileSync(MODE_FILE, JSON.stringify({ mode: "private" }, null, 2));
-  }
-  const data = JSON.parse(fs.readFileSync(MODE_FILE));
-  return data.mode || "private";
-}
-
-function setMode(newMode) {
-  fs.writeFileSync(MODE_FILE, JSON.stringify({ mode: newMode }, null, 2));
-}
-
-// === Helpers universels ===
+// === Helpers ===
 function normalizeJid(jid) {
   if (!jid) return null;
   return jid.split(":")[0].replace("@lid", "@s.whatsapp.net");
 }
-function getBareNumber(input) {
-  if (!input) return "";
-  return String(input).split("@")[0].split(":")[0].replace(/[^0-9]/g, "");
+function getBareNumber(jid) {
+  if (!jid) return "";
+  return String(jid).split("@")[0].replace(/[^0-9]/g, "");
 }
 function unwrapMessage(m) {
   return (
@@ -64,219 +48,119 @@ function pickText(m) {
     null
   );
 }
+
+// === Mode (public/private) ===
+const MODE_FILE = "./mode.json";
+function getMode() {
+  if (!fs.existsSync(MODE_FILE)) {
+    fs.writeFileSync(MODE_FILE, JSON.stringify({ mode: "private" }, null, 2));
+  }
+  return JSON.parse(fs.readFileSync(MODE_FILE)).mode || "private";
+}
 function loadSudo() {
   const file = "./sudo.json";
   if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify({ sudo: [] }, null, 2));
   return JSON.parse(fs.readFileSync(file)).sudo;
 }
 
-// === Fonction principale ===
+// === MAIN FUNCTION ===
 async function startCriminal() {
   const { state, saveCreds } = await useMultiFileAuthState("./session");
-  const { version } = await fetchLatestBaileysVersion();
 
+  const { version } = await fetchLatestBaileysVersion();
   const sock = makeWASocket({
+    auth: state,
     version,
     printQRInTerminal: false,
     logger: pino({ level: "silent" }),
-    auth: state,
-    browser: ["Ubuntu", "Chrome", "𝐂𝐫𝐢𝐦𝐢𝐧𝐚𝐥-𝐗𝐌𝐃"],
+    browser: ["Ubuntu", "Chrome", "Criminal-MD"],
   });
 
-  // === Appairage automatique ===
+  // === Pairing ===
   try {
     if (!state?.creds?.registered) {
       let number = (process.env.OWNER_NUMBER || "").trim();
+
       if (!number && process.stdin.isTTY) {
-        number = (await ask(chalk.cyan("📱 Entre ton numéro WhatsApp (ex: 2376XXXXXXXX): "))).trim();
+        number = (await ask(chalk.cyan("📱 Entre ton numéro WhatsApp (ex: 225xxxxxxxx): "))).trim();
       }
 
-      if (!number) {
-        console.log(chalk.red("❌ Aucun numéro saisi."));
-      } else {
+      if (number) {
         const resp = await sock.requestPairingCode(number);
         const code = typeof resp === "string" ? resp : resp?.code || null;
-        if (code) {
-          console.log(chalk.green("\n✅ Code d’appairage : ") + chalk.yellow(code.split("").join(" ")));
-        } else {
-          console.log(chalk.red("⚠️ Aucun code reçu. Essaie de redémarrer."));
-        }
+        if (code) console.log(chalk.green("\n🔑 Code d’appairage : ") + code.split("").join(" "));
+      } else {
+        console.log(chalk.red("❌ Aucun numéro saisi."));
       }
     }
   } catch (e) {
-    console.log(chalk.red("❌ Erreur appairage:"), e);
+    console.log(chalk.red("❌ Pairing Error:"), e);
   }
 
-  // === Chargement automatique des commandes ===
-  const commands = {};
-  const cmdPath = path.join(process.cwd(), "commands");
-  if (!fs.existsSync(cmdPath)) fs.mkdirSync(cmdPath, { recursive: true });
-
-  for (const file of fs.readdirSync(cmdPath).filter((f) => f.endsWith(".js"))) {
-    try {
-      const cmd = await import(path.join(cmdPath, file));
-      if (cmd.name && typeof cmd.execute === "function") {
-        commands[cmd.name.toLowerCase()] = cmd;
-        console.log(chalk.greenBright(`⚡ Commande chargée : ${cmd.name}`));
-      }
-    } catch (err) {
-      console.log(chalk.red(`Erreur chargement ${file}:`), err);
-    }
-  }
-
-  // === Gestion des connexions ===
+  // === Connexion WhatsApp ===
   sock.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
-    if (qr) console.log(chalk.yellow("📸 Scanne le QR code vite !"));
+    if (qr) console.log(chalk.yellow("📸 Scanne vite le QR !"));
+
     if (connection === "open") {
-      console.log(chalk.greenBright ("Démarrage 🩸 Criminal MD BOT  🩸🕶️"));
-      console.log(chalk.cyanBright("✅ Connecté à WhatsApp avec succès !"));
+      console.log(chalk.green("🩸 Criminal MD Connecté"));
+      console.log(chalk.cyan("➡️ Handler ESModule activé"));
 
-      const ownerId = normalizeJid(sock.user?.id);
-      const ownerBare = getBareNumber(ownerId);
-      const ownerLid = sock.user?.lid ? getBareNumber(sock.user.lid) : null;
+      // Owner global
+      const ownerJid = normalizeJid(sock.user.id);
+      const ownerNum = getBareNumber(ownerJid);
+      global.owners = [ownerNum];
 
-      global.owners = [ownerBare];
-      if (ownerLid) global.owners.push(ownerLid);
-
+      // Marque premier démarrage
       if (!fs.existsSync("./.firstboot")) {
         fs.writeFileSync("./.firstboot", "ok");
-        console.log(chalk.magentaBright("⚠️ Premier lancement détecté → redémarrage dans 5s..."));
-        setTimeout(() => process.exit(1), 5000);
+        console.log(chalk.magenta("↻ Premier lancement → restart dans 3s"));
+        setTimeout(() => process.exit(1), 3000);
       }
-    } else if (connection === "close") {
+    }
+
+    if (connection === "close") {
       const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
-      console.log(chalk.red("💀 Déconnecté — Code:", reason));
+      console.log(chalk.red("💀 Déconnecté :", reason));
+
       if (reason !== DisconnectReason.loggedOut) {
-        console.log(chalk.yellow("🔁 Tentative de reconnexion dans 5s..."));
-        setTimeout(startCriminal, 5000);
+        console.log(chalk.yellow("🔄 Reconnexion dans 3s..."));
+        setTimeout(startCriminal, 3000);
       } else {
-        console.log(chalk.red("🚫 Session expirée → Supprime ./session et relance."));
+        console.log(chalk.red("🚫 Session expirée — Supprime /session"));
       }
     }
   });
 
   sock.ev.on("creds.update", saveCreds);
 
-  // === Gestion des messages ===
+  // === Réception des messages ===
   sock.ev.on("messages.upsert", async ({ messages }) => {
     for (const msg of messages) {
       if (!msg.message) continue;
-      const from = msg.key.remoteJid;
-      const isGroup = from.endsWith("@g.us");
-      let sender = msg.key.fromMe ? sock.user.id : msg.key.participant || from;
-      sender = normalizeJid(sender);
-      const senderNum = getBareNumber(sender);
-      const text = pickText(unwrapMessage(msg.message));
-      if (!text) continue;
 
+      // Mode privé
+      const sender = getBareNumber(msg.key.participant || msg.key.remoteJid);
       const mode = getMode();
       const sudo = loadSudo().map((x) => String(x).replace(/[^0-9]/g, ""));
       const allowed = [...(global.owners || []), ...sudo];
 
-      if (mode === "private" && !allowed.includes(senderNum)) return;
-        // === ANTI-LINK SYSTEM 🩸 WITH WARN + KICK ===
-      const antiLinkConfig = JSON.parse(fs.readFileSync("./antilink.json"));
-      const antiLinkRegex = /(https?:\/\/|www\.|chat\.whatsapp\.com|t\.me|bit\.ly|tinyurl\.com)/i;
+      if (mode === "private" && !allowed.includes(sender)) continue;
 
-      if (antiLinkConfig.status === "on" && isGroup && antiLinkRegex.test(text)) {
-
-        const groupMetadata = await sock.groupMetadata(from);
-        const admins = groupMetadata.participants
-          .filter(p => p.admin)
-          .map(p => String(p.id).split("@")[0].replace(/[^0-9]/g, ""));
-
-        const isAdmin = admins.includes(senderNum);
-        const sudo = loadSudo().map(x => String(x).replace(/[^0-9]/g, ""));
-        const owners = global.owners || [];
-
-        // On ne punit pas admins + owners + sudo
-        if (!owners.includes(senderNum) && !sudo.includes(senderNum) && !isAdmin) {
-
-          // Réaction
-          await sock.sendMessage(from, { react: { text: "🩸", key: msg.key } });
-
-          // Supprimer le message
-          await sock.sendMessage(from, {
-            delete: {
-              remoteJid: from,
-              id: msg.key.id,
-              participant: msg.key.participant || sender
-            }
-          });
-
-          // Initialiser les warnings
-          if (!antiLinkConfig.warnings[senderNum]) {
-            antiLinkConfig.warnings[senderNum] = 0;
-          }
-
-          // Ajouter un warning
-          antiLinkConfig.warnings[senderNum] += 1;
-          fs.writeFileSync("./antilink.json", JSON.stringify(antiLinkConfig, null, 2));
-
-          const warn = antiLinkConfig.warnings[senderNum];
-
-          // === Warn 1 & 2 ===
-          if (warn < 3) {
-            await sock.sendMessage(from, {
-              text: `🩸 *Lien détecté !*\n⚠️ @${senderNum} → *Avertissement ${warn}/3*\n\nAprès 3 warns → *Expulsion automatique*`,
-              mentions: [sender]
-            });
-            return;
-          }
-
-          // === 3e Warn → KICK ===
-          if (warn >= 3) {
-            await sock.groupParticipantsUpdate(from, [sender], "remove");
-
-            await sock.sendMessage(from, {
-              text: `🩸 *AntiLink Auto Kick*\n🚫 @${senderNum} expulsé après *3 warnings*.`,
-              mentions: [sender]
-            });
-
-            // Reset warnings après kick
-            delete antiLinkConfig.warnings[senderNum];
-            fs.writeFileSync("./antilink.json", JSON.stringify(antiLinkConfig, null, 2));
-
-            console.log(`🩸 AntiLink → ${senderNum} expulsé !`);
-          }
-        }
-      }
-      if (!text.startsWith(PREFIX)) return;
-
-      const args = text.slice(PREFIX.length).trim().split(/ +/);
-      const cmd = args.shift().toLowerCase();
-
-      if (cmd === "mode") {
-        if (!allowed.includes(senderNum)) return;
-        const newMode = args[0];
-        if (!["public", "private"].includes(newMode)) {
-          await sock.sendMessage(from, { text: "⚙️ Usage : .mode public / private" }, { quoted: msg });
-          return;
-        }
-        setMode(newMode);
-        await sock.sendMessage(from, { text: `✅ Mode changé → *${newMode.toUpperCase()}*` }, { quoted: msg });
-        console.log(chalk.blue(`🔁 Mode changé par ${senderNum} → ${newMode}`));
-        return;
-      }
-
-      if (commands[cmd]) {
-        try {
-          await commands[cmd].execute(sock, msg, args);
-          console.log(chalk.green(`✅ Commande exécutée : ${cmd}`));
-        } catch (err) {
-          console.log(chalk.red(`Erreur ${cmd}:`), err);
-          await sock.sendMessage(from, { text: "⚠️ Une erreur est survenue." }, { quoted: msg });
-        }
+      // Passer au handler.js
+      try {
+        await handler(sock, msg);
+      } catch (err) {
+        console.log("Erreur Handler :", err);
       }
     }
   });
 }
 
-// === Lancement ===
-startCriminal().catch((e) => {
-  console.log(chalk.red("❌ Erreur fatale:"), e);
+// === START ===
+startCriminal().catch((err) => {
+  console.log(chalk.red("❌ Fatal Error:"), err);
   try { rl.close(); } catch {}
   process.exit(1);
 });
