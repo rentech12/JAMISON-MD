@@ -1,4 +1,4 @@
-// 🩸 MENU JAMISON MD v2 — FANCY
+// 🩸 MENU JAMISON MD v1
 
 import fs from "fs";
 
