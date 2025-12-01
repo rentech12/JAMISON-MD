@@ -22,6 +22,20 @@ import { handler } from "./handler.js";
 dotenv.config();
 
 //==============================================================//
+//                   CONTEXT INFO GLOBAL (Jamison MD)
+//==============================================================//
+global.jamisonContext = {
+  externalAdReply: {
+    title: "JAMISON MD — Official Build",
+    body: "🔥 Powered by Ren Tech",
+    mediaType: 1,
+    renderLargerThumbnail: true,
+    thumbnailUrl: "https://i.ibb.co/tJxq9n0/ren-tech-logo.jpg", // TU PEUX ME DONNER TON LOGO
+    sourceUrl: "https://whatsapp.com/channel/0029VbBjwT52f3ELVPsK6V2K",
+  }
+};
+
+//==============================================================//
 //                      Console Input
 //==============================================================//
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
