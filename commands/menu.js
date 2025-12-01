@@ -12,10 +12,22 @@ function formatUptime(seconds) {
   return `${h}h ${m}m ${s}s`;
 }
 
+function getMode() {
+  try {
+    const file = JSON.parse(fs.readFileSync("./mode.json"));
+    return file.mode || "private";
+  } catch {
+    return "private";
+  }
+}
+
 export async function execute(sock, msg, args) {
   try {
     const from = msg.key.remoteJid;
     const uptime = formatUptime(process.uptime());
+    const username = msg.pushName || "Utilisateur";
+    const mode = getMode();
+    const channel = global.channel || "Aucune chaîne définie";
 
     // Réaction emoji
     await sock.sendMessage(from, { react: { text: "🩸", key: msg.key } });
@@ -31,37 +43,46 @@ export async function execute(sock, msg, args) {
          🩸✨ JAMISON MD ✨🩸
 ╚══════════════════════╝
 
-👤 *Utilisateur* : ${msg.pushName || "Invité"}
-⚙️ *Mode*        : 🔒 Privé
+👤 *Utilisateur* : ${username}
+⚙️ *Mode*        : ${mode === "public" ? "🌍 Public" : "🔒 Privé"}
 ⏱️ *Uptime*      : ${uptime}
 📱 *Version*     : 2.0
 🧎🏾‍♂️ *Développeur* : REN TECH
 
-╔═══ 🌟 UTILITY 🌟 ═══╗
-🗑️ DELETE
-📱 DEVICE
-🏓 PING
-╚════════════════════╝
+╔═══ 🌟 COMMANDES 🌟 ═══╗
+🗑️ .delete
+📱 .device
+🏓 .ping
+╚══════════════════════╝
 
 🔗 *Chaîne officielle WhatsApp* :
-${global.channel}
+${channel}
 `;
 
-    // Envoi image + texte
-    await sock.sendMessage(from, {
-      image: { url: "https://files.catbox.moe/s3d33z.jpg" },
-      caption: menuText
-    });
+    // Essayer d'envoyer image
+    try {
+      await sock.sendMessage(from, {
+        image: { url: "https://files.catbox.moe/s3d33z.jpg" },
+        caption: menuText
+      });
+    } catch {
+      // fallback si l’image plante
+      await sock.sendMessage(from, { text: menuText });
+    }
 
     // Envoi audio en note vocale
     await sock.sendMessage(from, {
       audio: audio,
-      mimetype: "audio/mp4",
+      mimetype: "audio/mpeg",
       ptt: true
     });
 
   } catch (e) {
     console.error("Erreur menu :", e);
-    await sock.sendMessage(msg.key.remoteJid, { text: `❌ Erreur menu : ${e.message}` }, { quoted: msg });
+    await sock.sendMessage(
+      msg.key.remoteJid,
+      { text: `❌ Erreur menu : ${e.message}` },
+      { quoted: msg }
+    );
   }
 }
