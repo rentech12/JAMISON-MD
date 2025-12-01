@@ -1,5 +1,7 @@
-// === handler.js ===
-// Gestionnaire principal des commandes ES Module
+//==============================================================//
+//                        JAMISON XMD                           //
+//          Handler Principal — Build Clean Ren Tech            //
+//==============================================================//
 
 import fs from "fs";
 import path from "path";
@@ -8,20 +10,43 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const commandsDir = path.join(__dirname, "commands");
 
-// Collection des commandes
+//==============================================================//
+//                     Auto-load des commandes
+//==============================================================//
 const commands = new Map();
 
-// Charger toutes les commandes automatiquement
 for (const file of fs.readdirSync(commandsDir)) {
   if (file.endsWith(".js")) {
-    const cmd = await import(path.join(commandsDir, file));
-    commands.set(cmd.name, cmd);
+    const cmdModule = await import(path.join(commandsDir, file));
+    if (!cmdModule.default || !cmdModule.name) continue;
+
+    commands.set(cmdModule.name.toLowerCase(), cmdModule.default);
+    console.log(`🧩 Commande chargée : ${cmdModule.name}`);
   }
 }
 
+//==============================================================//
+//              Fonction globale : contextInfo Auto Ren Tech
+//==============================================================//
+global.sendRen = async (sock, jid, message) => {
+  return sock.sendMessage(jid, {
+    ...message,
+    contextInfo: {
+      externalAdReply: {
+        title: "Ren Tech - Channel Officiel",
+        body: "view channel",
+        mediaType: 1,
+        sourceUrl: "https://whatsapp.com/channel/0029VbBjwT52f3ELVPsK6V2K"
+      }
+    }
+  });
+};
+
+//==============================================================//
+//                       Handler Principal
+//==============================================================//
 export async function handler(sock, m) {
   try {
-    // Vérifier si c’est un message texte
     const text =
       m.message?.conversation ||
       m.message?.extendedTextMessage?.text ||
@@ -29,27 +54,21 @@ export async function handler(sock, m) {
 
     if (!text) return;
 
-    // Préfixe (modifie ici si tu veux)
     const prefix = ".";
     if (!text.startsWith(prefix)) return;
 
-    // Extraire nom + arguments
     const args = text.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
 
-    // Vérifier si commande existe
-    if (!commands.has(commandName)) {
-      return;
-    }
+    if (!commands.has(commandName)) return;
 
-    const command = commands.get(commandName);
+    const execute = commands.get(commandName);
 
     console.log(`➡️ Commande exécutée : ${commandName}`);
 
-    // Exécuter commande
-    await command.execute(sock, m, args);
+    await execute(sock, m, args);
 
-  } catch (e) {
-    console.error("Erreur Handler :", e);
+  } catch (err) {
+    console.error("❌ Erreur Handler :", err);
   }
 }
