@@ -11,21 +11,20 @@ function formatUptime(seconds) {
   return `${h}h ${m}m ${s}s`;
 }
 
-export async function execute(sock, msg, args) {   // OBLIGATOIRE pour ton index.js
+export async function execute(sock, msg, args) {
   try {
     const from = msg.key.remoteJid;
     const uptime = formatUptime(process.uptime());
 
-    // Réaction 🩸
+    // Réaction
     await sock.sendMessage(from, {
       react: { text: "🩸", key: msg.key }
     });
 
-    // Media (image + audio)
-    const image = fs.readFileSync("./media/menu.jpg");
+    // Audio
     const audio = fs.readFileSync("./media/menu.mp3");
 
-    // Texte principal du menu
+    // Texte menu
     const menuText = `
 ╔════════════════════╗
      🩸JAMISON MD 🩸
@@ -38,12 +37,9 @@ export async function execute(sock, msg, args) {   // OBLIGATOIRE pour ton index
 🧎🏾 *Développeur* : REN TECH 
 
 ╔───── UTILITY ─────╗
-
 ➤ 𝙳𝙴𝙻𝙴𝚃𝙴
 ➤ 𝙳𝙴𝚅𝙸𝙲𝙴
 ➤ 𝙿𝙸𝙽𝙶
-
-
 ╚──────────────────╝
 
 ╔───── GROUPS ─────╗
@@ -63,7 +59,6 @@ export async function execute(sock, msg, args) {   // OBLIGATOIRE pour ton index
 ➤ 𝚃𝙰𝙶𝙰𝙻𝙻
 ➤ 𝚄𝙽𝙼𝚄𝚃𝙴
 ➤ 𝙶𝙿𝙿
-
 ╚──────────────────╝
 
 ╔──── DOWNLOAD ────╗
@@ -88,21 +83,15 @@ export async function execute(sock, msg, args) {   // OBLIGATOIRE pour ton index
 ╚──────────────────╝
 
 > 𝙳𝙴𝚅 𝙱𝚈 REN TECH 
-
- ╔═══◆◆◆═══╗
-
- 𝙋𝙊𝙒𝙀𝙍𝙀𝘿 𝘽𝙔 REN TECH 
-
-╚═══◆◆◆═══╝
 `;
 
-    // Envoi de l’image + menu
+    // Envoi image + caption
     await sock.sendMessage(from, {
-      image: "https://files.catbox.moe/s3d33z.jpg"
+      image: { url: "https://files.catbox.moe/s3d33z.jpg" },
       caption: menuText
     });
 
-    // Envoi audio (note vocale)
+    // Envoi audio en note vocale
     await sock.sendMessage(from, {
       audio: audio,
       mimetype: "audio/mp4",
