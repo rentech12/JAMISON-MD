@@ -20,29 +20,46 @@ export async function execute(sock, msg, args) {
     );
   }
 
-  // Charger SUDO depuis ton index
-  const sudoList = (global.owners || [])
-    .concat(global.sudo || [])
-    .map((n) => n.replace(/[^0-9]/g, "") + "@s.whatsapp.net");
+  // Protection SUDO (propre)
+  const sudoList = [
+    ...(global.owners || []),
+    ...(global.sudo || []) // défini dans handler ou index
+  ].map((n) => n.replace(/[^0-9]/g, "") + "@s.whatsapp.net");
 
   try {
-    // Metadata
+    // Infos groupe
     const group = await sock.groupMetadata(from);
     const participants = group.participants || [];
 
-    // Bot JID
     const botJid = (sock.user.id || "").split(":")[0] + "@s.whatsapp.net";
 
-    // Admins
-    const admins = participants.filter((p) => p.admin).map((p) => p.id);
+    // --- Vérifier si bot est admin ---
+    const isBotAdmin = participants.some(
+      (p) =>
+        p.id === botJid &&
+        (p.admin === "admin" || p.admin === "superadmin")
+    );
 
-    // Membres à kick
+    if (!isBotAdmin) {
+      return await sock.sendMessage(
+        from,
+        { text: "❌ Je dois être *admin* pour effectuer la purge !" },
+        { quoted: msg }
+      );
+    }
+
+    // --- Détection admins ---
+    const admins = participants
+      .filter((p) => p.admin === "admin" || p.admin === "superadmin")
+      .map((p) => p.id);
+
+    // --- Détection kick ---
     const toKick = participants
       .filter(
         (p) =>
-          !p.admin &&               // pas admin
-          p.id !== botJid &&        // pas le bot
-          !sudoList.includes(p.id)  // pas sudo ni owner
+          !admins.includes(p.id) &&
+          p.id !== botJid &&
+          !sudoList.includes(p.id)
       )
       .map((p) => p.id);
 
@@ -54,6 +71,7 @@ export async function execute(sock, msg, args) {
       );
     }
 
+    // Message esthétique
     const announce = `
 ╔════════════════════════╗
       🩸 𝐏𝐔𝐑𝐆𝐄 JAMISON 🩸
@@ -63,21 +81,22 @@ export async function execute(sock, msg, args) {
 ⚡ *JAMISON MD exécute la purge totale.*
 💀 *Aucun pardon. Aucune évasion.*
 
-📡 *Chaîne Officielle* :
-${global.channel}
+📡 *Chaîne :* ${global.channel || "Aucune chaîne définie."}
 `;
 
     // Envoi image + annonce
-    await sock.sendMessage(from, {
-      image: { url: "https://files.catbox.moe/um1spx.jpg" },
-      caption: announce,
-      mentions: participants.map((p) => p.id)
-    });
+    try {
+      await sock.sendMessage(from, {
+        image: { url: "https://files.catbox.moe/um1spx.jpg" },
+        caption: announce
+      });
+    } catch {
+      await sock.sendMessage(from, { text: announce });
+    }
 
-    // Kick
+    // Lancement purge
     await sock.groupParticipantsUpdate(from, toKick, "remove");
 
-    // Résultat final
     await sock.sendMessage(
       from,
       {
