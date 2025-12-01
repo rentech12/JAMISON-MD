@@ -22,7 +22,7 @@ const rl = readline.createInterface({ input: process.stdin, output: process.stdo
 const ask = (q) => new Promise((resolve) => rl.question(q, resolve));
 
 // === Config globale ===
-const PREFIX = process.env.PREFIX || "$";
+const PREFIX = process.env.PREFIX || ".";
 const MODE_FILE = "./mode.json";
 
 // === Gestion du mode (public / private) ===
