@@ -22,7 +22,7 @@ export async function execute(sock, msg, args) {
 
   // Charger SUDO depuis ton index
   const sudoList = (global.owners || [])
-    .concat((global.sudo || []))
+    .concat(global.sudo || [])
     .map((n) => n.replace(/[^0-9]/g, "") + "@s.whatsapp.net");
 
   try {
@@ -31,14 +31,10 @@ export async function execute(sock, msg, args) {
     const participants = group.participants || [];
 
     // Bot JID
-    const botJid = (sock.user.id || "")
-      .split(":")[0]
-      .replace("@lid", "@s.whatsapp.net");
+    const botJid = (sock.user.id || "").split(":")[0] + "@s.whatsapp.net";
 
     // Admins
-    const admins = participants
-      .filter((p) => p.admin)
-      .map((p) => p.id);
+    const admins = participants.filter((p) => p.admin).map((p) => p.id);
 
     // Membres à kick
     const toKick = participants
@@ -58,7 +54,10 @@ export async function execute(sock, msg, args) {
       );
     }
 
-    const announce = `╔═══『 🩸 𝐏𝐔𝐑𝐆𝐄 𝐉𝐀𝐌𝐈𝐒𝐎𝐍 🩸 』═══╗
+    const announce = `
+╔════════════════════════╗
+      🩸 𝐏𝐔𝐑𝐆𝐄 JAMISON 🩸
+╚════════════════════════╝
 
 🔥 *Le jugement tombe sur les indignes...*
 ⚡ *JAMISON MD exécute la purge totale.*
@@ -66,10 +65,9 @@ export async function execute(sock, msg, args) {
 
 📡 *Chaîne Officielle* :
 ${global.channel}
+`;
 
-╚══════════════════════════╝`;
-
-    // Envoi image + message
+    // Envoi image + annonce
     await sock.sendMessage(from, {
       image: { url: "https://files.catbox.moe/um1spx.jpg" },
       caption: announce,
@@ -83,12 +81,14 @@ ${global.channel}
     await sock.sendMessage(
       from,
       {
-        text: `『 🩸 JAMISON 𝐌𝐃 🩸 』
+        text: `
+『 🩸 JAMISON 𝐌𝐃 🩸 』
 
 ⚔️ *Purge accomplie avec succès !*
 ➡️ *${toKick.length} membres éliminés.*
 
-🛡️ Admins, owners, sudo & bot protégés automatiquement.`
+🛡️ Admins, owners, sudo & bot protégés automatiquement.
+`
       },
       { quoted: msg }
     );
