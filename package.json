@@ -1,15 +1,18 @@
 {
   "name": "jamison-xmd",
   "version": "1.0.0",
-  "description": "JAMISON 𝐌𝐃 — Bot WhatsApp Baileys Multi-Commandes Mystique & Fatal 🔥",
+  "description": "🔥 JAMISON XMD — Bot WhatsApp Baileys Multi-Commandes • Build Signature REN TECH",
   "main": "index.js",
   "type": "module",
   "author": "REN TECH",
   "license": "MIT",
+
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "clean": "rm -rf session && rm -rf auth"
   },
+
   "dependencies": {
     "@adiwajshing/keyed-db": "^0.2.4",
     "@hapi/boom": "^10.0.1",
@@ -19,27 +22,33 @@
     "fs-extra": "^11.2.0",
     "pino": "^9.3.0"
   },
+
   "devDependencies": {
     "nodemon": "^3.1.7"
   },
+
   "keywords": [
     "whatsapp-bot",
-    "baileys",
+    "baileys-md",
     "jamison-xmd",
-    "bot-whatsapp",
+    "ren-tech",
     "multi-device",
-    "powered-by-Ren tech",
-    "zkms6-compatible"
+    "esmodule",
+    "bot-whatsapp"
   ],
+
   "engines": {
     "node": ">=18.0.0"
   },
+
   "repository": {
     "type": "git",
     "url": "https://github.com/rentech12/JAMISON-MD"
   },
+
   "bugs": {
     "url": "https://github.com/rentech12/JAMISON-MD/issues"
   },
-  "homepage": "https://github.com/rentech12/JAMISON-MD/blob/main/README.md"
+
+  "homepage": "https://github.com/rentech12/JAMISON-MD#readme"
 }
