@@ -82,6 +82,9 @@ export async function execute(sock, msg, args) {
 ➤ 𝚂𝙰𝚅𝙴
 ╚──────────────────╝
 
+🔗 *Chaîne officielle WhatsApp* :
+${global.channel}
+
 > 𝙳𝙴𝚅 𝙱𝚈 REN TECH 
 `;
 
