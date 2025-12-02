@@ -1,54 +1,22 @@
 {
-  "name": "jamison-xmd",
+  "name": "bachira-v1",
   "version": "1.0.0",
-  "description": "🔥 JAMISON XMD — Bot WhatsApp Baileys Multi-Commandes • Build Signature REN TECH",
-  "main": "index.js",
+  "description": "Bot WhatsApp Bachira V1",
+  "main": "main.js",
   "type": "module",
-  "author": "REN TECH",
-  "license": "MIT",
-
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "clean": "rm -rf session && rm -rf auth"
+    "start": "node main.js",
+    "dev": "nodemon main.js"
   },
-
   "dependencies": {
-    "@adiwajshing/keyed-db": "^0.2.4",
-    "@hapi/boom": "^10.0.1",
-    "@whiskeysockets/baileys": "^6.7.5",
-    "chalk": "^5.3.0",
-    "dotenv": "^16.4.5",
-    "fs-extra": "^11.2.0",
-    "pino": "^9.3.0"
+    "@whiskeysockets/baileys": "^6.4.0",
+    "qrcode-terminal": "^0.12.0",
+    "pino": "^8.15.0",
+    "axios": "^1.6.0",
+    "moment-timezone": "^0.5.43",
+    "fs-extra": "^11.1.1"
   },
-
   "devDependencies": {
-    "nodemon": "^3.1.7"
-  },
-
-  "keywords": [
-    "whatsapp-bot",
-    "baileys-md",
-    "jamison-xmd",
-    "ren-tech",
-    "multi-device",
-    "esmodule",
-    "bot-whatsapp"
-  ],
-
-  "engines": {
-    "node": ">=18.0.0"
-  },
-
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/rentech12/JAMISON-MD"
-  },
-
-  "bugs": {
-    "url": "https://github.com/rentech12/JAMISON-MD/issues"
-  },
-
-  "homepage": "https://github.com/rentech12/JAMISON-MD#readme"
+    "nodemon": "^3.0.1"
+  }
 }
